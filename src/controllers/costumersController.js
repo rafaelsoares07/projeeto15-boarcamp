@@ -61,9 +61,20 @@ export async function insertCostumer(req, res){
         return
     }
 
+
+    const {rows:cpfExist} = await connection.query(
+    `SELECT * FROM customers
+     WHERE customers.cpf = $1
+    `,[cpf]
+    )
+
+    console.log(cpfExist)
+
+    if(cpfExist.length>0){
+        res.status(409).send('Não foi possivel fazer o cadastro verifique as informacoes passadas ')
+        return
+    }
     
-
-
 
 
     await connection.query(
@@ -72,7 +83,41 @@ export async function insertCostumer(req, res){
     `,[name,phone,cpf,updatedUser.birthday] 
     )
 
+    res.status(200).send('oii funfou viu?')
+}
 
+export async function updateCostumer(req, res){
 
-    res.status(222).send('oii funfou viu?')
+    const idCustomer = req.params.id
+    const customer = req.body
+    const {name, phone, cpf, birthday} = req.body
+
+    const customerValid = customerSchema.validate(customer)
+
+    if(customerValid.error){
+        res.status(400).send('erro no body da request')
+        return
+    }
+
+    const {rows:customerExist} = await connection.query(
+        `SELECT * FROM customers
+         WHERE customers.cpf = $1
+        `,[customer.cpf]
+    )
+
+    if(customerExist.length===0){
+        console.log('nao existe user com esse cpf pra atualizar ')
+        res.status(409).send('usuario nao existe ')
+        return
+    }
+
+    await connection.query(
+    `UPDATE customers
+     SET name=$1 , phone=$2, cpf=$3, birthday=$4
+     WHERE id = $5
+    `,
+    [name, phone,cpf, birthday, idCustomer]
+    )
+
+    res.status(200).send('atualizou com sucesso ')
 }
