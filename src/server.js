@@ -4,6 +4,7 @@ import cors from "cors"
 
 import categoriesRoutes from "./routes/categoriesRoutes.js"
 import gamesRoutes from "./routes/gamesRoutes.js"
+import customersRoutes from "./routes/customersRoutes.js"
 
 const server = express()
 server.use(cors())
@@ -12,6 +13,7 @@ server.use(express.json())
 
 server.use(categoriesRoutes) 
 server.use(gamesRoutes)
+server.use(customersRoutes)
  
 
 

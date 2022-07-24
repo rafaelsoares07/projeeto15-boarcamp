@@ -21,15 +21,28 @@ export async function createGame(req, res){
          WHERE categories.id = ${categoryId} `
         )
 
-        //console.log(categoryExist.rows)
-
         
+        if(categoryExist.rows.length===0){
+            res.status(400).send('Categoria não existe ')
+            return
+        }
+
+        const gameExist = await connection.query(
+            `SELECT * FROM games 
+            WHERE games.name = $1`, 
+            [game.name] 
+        );
+
+        if(gameExist.rows.length>0){
+            res.status(201).send('Jogo já está cadastrado')
+            return
+        }
+
         await connection.query(    
        `INSERT INTO games (name,image,"stockTotal","categoryId","pricePerDay") 
         VALUES ($1,$2,$3,$4,$5)`,
         [name, image,stockTotal,categoryId,pricePerDay]
         )
-
             
         res.status(201).send('criou o novo jogo')
         
