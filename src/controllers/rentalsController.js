@@ -135,6 +135,14 @@ export async function createRentals(req, res){
 
 export async function deleteRental(req, res){
     const id = req.params.id
+
+    const {rows:rentalExist} = await connection.query('SELECT * FROM rentals WHERE id =$1 ',[id])
+    
+
+    if(rentalExist.length<1){
+        res.status(404).send('alugeuu com ess id nao existe')
+        return
+    }
     
     await connection.query(
     `DELETE FROM rentals WHERE rentals.id = $1 AND rentals."returnDate" IS NOT NULL
@@ -153,7 +161,7 @@ export async function finalizeRentals(req, res){
         const rentalExist = await connection.query(`SELECT * FROM rentals WHERE id = $1`,[id])
     
         if(rentalExist.rowCount<1){
-            res.status(400).send('nao tem esse id no rentals')
+            res.status(404).send('nao tem esse id no rentals')
         }
 
 
@@ -173,7 +181,7 @@ export async function finalizeRentals(req, res){
 
         if(returnDate!=null){
             
-            res.status(424).send('já foi devolvido')
+            res.status(400).send('já foi devolvido')
             return
         }
     
