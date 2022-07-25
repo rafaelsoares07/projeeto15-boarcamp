@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import connection from "../dbStrategy/database.js";
 
 function FormatObjectRentals(obj){
@@ -50,7 +51,7 @@ export async function listRentals(req, res){
         ON games."categoryId" = categories.id
         `    
         )
-        console.log(rental)
+        
         res.status(200).send(FormatObjectRentals(rental))
     }
 
@@ -82,13 +83,14 @@ export async function createRentals(req, res){
         }
 
         const {rows:stockValid} = await connection.query(
-        `SELECT rentals.*, games."stockTotal" FROM rentals
-        JOIN games
-        ON rentals."gameId" = games.id
-        WHERE rentals."gameId" = $1
-        `,
+        `SELECT * FROM games WHERE id = $1`,
         [gameId]
         )
+        
+        if(stockValid.rowCount<1){
+            res.status(400).send('ID DO JOGO NAO ENCONTRADO')
+        }
+
 
         const {rows:stock } = await connection.query(
         `
@@ -100,12 +102,18 @@ export async function createRentals(req, res){
         [gameId]
         )
 
+    
 
-        const qtdGames = stock[0]?.stockTotal
+        const qtdGames = stockValid[0].stockTotal
+        console.log("quantidade " + qtdGames)
+
         const qtdNaoDevolvida = stock?.length
+        console.log("quantid nao devolvida" + qtdNaoDevolvida)
 
-        if(qtdNaoDevolvida>=qtdGames){
-            res.status(422).send('NAO TEM MAIS JOGOS DESSE DIPONIVEL')
+        const qtdAux = qtdNaoDevolvida + 1
+        
+        if((qtdAux)>qtdGames){
+            res.status(422).send('nao tem mias jogos em estoque')
             return
         }
 
@@ -135,4 +143,57 @@ export async function deleteRental(req, res){
     )
 
     res.status(200).send('excluido com sucesso')
+}
+
+export async function finalizeRentals(req, res){
+
+    try{
+        const id = req.params.id
+
+        const rentalExist = await connection.query(`SELECT * FROM rentals WHERE id = $1`,[id])
+    
+        if(rentalExist.rowCount<1){
+            res.status(400).send('nao tem esse id no rentals')
+        }
+
+
+        const rental=await connection.query(
+        `SELECT rentals."rentDate",rentals."daysRented",rentals."returnDate",games."pricePerDay"
+        FROM rentals
+        JOIN games
+        ON games.id = rentals."gameId"
+        WHERE rentals.id=$1`
+        ,[id])
+
+        const{rentDate,pricePerDay, daysRented,returnDate}=rental.rows[0];
+    
+        const dateNow = dayjs();
+        const duration = dateNow.diff(rentDate, "day")
+        let delayFee = null
+
+        if(returnDate!=null){
+            
+            res.status(424).send('já foi devolvido')
+            return
+        }
+    
+
+        if(duration>daysRented){
+            delayFee = (duration-daysRented)*pricePerDay
+        }
+
+
+        
+        await connection.query(
+        `UPDATE rentals 
+         SET "returnDate" = NOW(), 
+         "delayFee" = $1
+         WHERE id = $2`
+         ,[delayFee, id])
+        res.status(200).send('Deu certo a devolucao')
+    }
+    catch(error){
+        console.log(error)
+    }
+
 }
