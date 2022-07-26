@@ -16,10 +16,11 @@ export async function listCustomers(req, res){
         )
         res.status(200).send(costumersSeach)
         return
-    }
+    } 
 
     else{
         const {rows:customers} = await connection.query(`SELECT * FROM customers`)
+        console.log(customers)
         res.status(200).send(customers)
         return
     }
@@ -36,12 +37,14 @@ export async function listCustomerById(req, res){
     `
     )
 
+    console.log(customerExist)
+
     if(customerExist.length===0){
         res.status(404).send('Usuario não existe ')
         return
     }
     
-    res.status(200).send(customerExist)
+    res.status(200).send(customerExist[0])
 }
 
 export async function insertCostumer(req, res){

@@ -86,4 +86,4 @@ export async function listBoardGames(req, res){
     catch(error){
         console.log(error)
     }
-}
+} 
